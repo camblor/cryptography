@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "euclid.c"
 
 #define ERR -1
 
@@ -26,6 +27,9 @@ int main(int argc, char *argv[]) {
     /* Parameter options*/
     parameters_afin options;
 
+    /* Default mode: Encryption */
+    options.mode = false; 
+
     /* Required parameters */
     bool ciphertext_size_flag = false;
     bool afin_mult = false;
@@ -34,8 +38,10 @@ int main(int argc, char *argv[]) {
     /* Error controller*/
     bool doDefault = false;
 
-    /* PROGRAM OPTIONS SELECTION */
-
+    /* ------------------------- */
+    /* PROGRAM ARGUMENTS PARSING */
+    /* ------------------------- */
+    
     /* Variable declaration */
     int c;
     opterr = 0;
@@ -48,7 +54,6 @@ int main(int argc, char *argv[]) {
         {
             /* ENCRYPTION */
             case 'C':
-                options.mode = false;
                 break;
 
             /* DECRYPTION */
@@ -122,16 +127,44 @@ int main(int argc, char *argv[]) {
                 return 1;
         }
     }
-    /* ERROR CONTROL, REQUIRED ARGUMENTS: e/d, m, a, b */
-        if( !ciphertext_size_flag || !afin_mult || !afin_const ){
-            fprintf (stderr, "REQUIRED ARGUMENTS:\n");
-            fprintf (stderr, "\t-m <tamaño del espacio de texto cifrado (value)>\n");
-            fprintf (stderr, "\t-a <coeficiente multiplicativo de la función afín (value)>\n");
-            fprintf (stderr, "\t-b <término constante de la función afín (value)>\n");
+    /* ERROR CONTROL, REQUIRED ARGUMENTS: {-E, -D}, -m, -a, -b */
+    if( !ciphertext_size_flag || !afin_mult || !afin_const ){
+        fprintf (stderr, "REQUIRED ARGUMENTS:\n");
+        fprintf (stderr, "\t{-C (Encrypt), -D (Decrypt)} (Default: C)\n");
+        fprintf (stderr, "\t-m <tamaño del espacio de texto cifrado (value)>\n");
+        fprintf (stderr, "\t-a <coeficiente multiplicativo de la función afín (value)>\n");
+        fprintf (stderr, "\t-b <término constante de la función afín (value)>\n");
+    }
+
+    /* ---------------------------- */
+    /* FUNCTIONALITY OF THE PROGRAM */
+    /* ---------------------------- */
+    int m = options.ciphertext_size;
+
+    /* Applying modulus */
+    options.afin_mult = options.afin_mult % m;
+    options.afin_const = options.afin_const % m;
+
+    int i;
+    
+
+    for (i=0; i<options.ciphertext_size; i++){
+        printf("i=%d\n",i);
+        int enc = ((options.afin_mult*i % m) + (options.afin_const % m)) % m;
+        printf("ax + b = %d (mod m) \n", enc);
+
+        int x, y;
+        int prueba = euclidExtended(m, options.afin_mult, &x, &y);
+        printf("El valor de prueba es %d\n", prueba);
+        int dec = (((enc - options.afin_const % m) * prueba) % m) % m;
+        if (dec < 0){
+            dec = options.ciphertext_size - dec;
         }
+        printf("(y-b) * a = %d (mod m) \n", dec);
+    }
 
-        /* COMPROBAR ENTRE ENCRYPT Y DECRYPT MEDIANTE LA BANDERA options.mode */
-        /* TODO */
+    /* COMPROBAR ENTRE ENCRYPT Y DECRYPT MEDIANTE LA BANDERA options.mode */
+    /* TODO */
 
-        /* UTILIZAR LOS VALORES */
+    /* UTILIZAR LOS VALORES DE 'm', 'a' y 'b' para hacer el cifrado afin. */
 }
