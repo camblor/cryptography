@@ -47,7 +47,7 @@ int gcdExtended(int a, int b, int *x, int *y)
 
     /*printf("(%d * %d) + (%d * %d) = %d\n", a,*x,b,*y, (a * (*x) + b * (*y)));*/
 
-    printf("X=%d\nY=%d\n", *x, *y);
+    //printf("X=%d\nY=%d\n", *x, *y);
   
     return gcd; 
 } 

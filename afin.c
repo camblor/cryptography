@@ -24,11 +24,16 @@ typedef struct {
 /* MAIN FUNCTION */
 int main(int argc, char *argv[]) {
 
+    if (argc < 2){
+        fprintf(stderr, "Introduzca al menos un argumento.\n");
+        return ERR;
+    }
+
     /* Parameter options*/
     parameters_afin options;
 
     /* Default mode: Encryption */
-    options.mode = false; 
+    options.mode = false;
 
     /* Required parameters */
     bool ciphertext_size_flag = false;
@@ -103,8 +108,8 @@ int main(int argc, char *argv[]) {
             
             /* ERROR CONTROL */
             case '?':
-                doDefault = true;
             default:
+                doDefault = true;
                 break;
         }
 
@@ -124,7 +129,8 @@ int main(int argc, char *argv[]) {
                 fprintf (stderr, "Unknown option '-%c'.\n", optopt);
             else
                 fprintf (stderr, "Wrong value for -%c.\n", c);
-                return 1;
+            
+            return 1;
         }
     }
     /* ERROR CONTROL, REQUIRED ARGUMENTS: {-E, -D}, -m, -a, -b */
@@ -134,6 +140,7 @@ int main(int argc, char *argv[]) {
         fprintf (stderr, "\t-m <tamaño del espacio de texto cifrado (value)>\n");
         fprintf (stderr, "\t-a <coeficiente multiplicativo de la función afín (value)>\n");
         fprintf (stderr, "\t-b <término constante de la función afín (value)>\n");
+        return ERR;
     }
 
     /* ---------------------------- */
@@ -146,25 +153,29 @@ int main(int argc, char *argv[]) {
     options.afin_const = options.afin_const % m;
 
     int i;
-    
 
     for (i=0; i<options.ciphertext_size; i++){
         printf("i=%d\n",i);
+
         int enc = ((options.afin_mult*i % m) + (options.afin_const % m)) % m;
         printf("ax + b = %d (mod m) \n", enc);
 
         int x, y;
         int prueba = euclidExtended(m, options.afin_mult, &x, &y);
         printf("El valor de prueba es %d\n", prueba);
+
         int dec = (((enc - options.afin_const % m) * prueba) % m) % m;
         if (dec < 0){
             dec = options.ciphertext_size - dec;
         }
+
         printf("(y-b) * a = %d (mod m) \n", dec);
     }
 
     /* COMPROBAR ENTRE ENCRYPT Y DECRYPT MEDIANTE LA BANDERA options.mode */
-    /* TODO */
+    /*
+    
+    */
 
     /* UTILIZAR LOS VALORES DE 'm', 'a' y 'b' para hacer el cifrado afin. */
 }
