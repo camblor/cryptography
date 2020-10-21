@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "euclid.c"
 
@@ -20,6 +21,27 @@ typedef struct {
     FILE *output;
 
 } parameters_afin;
+
+bool check_a_inverse(int a, int m){
+    if (euclid(a, m) == 1){
+        return true;
+    }
+    return false;
+}
+
+int cipher_afin(int plaintext, int quotient, int constant, int m){
+    int cipherletter = (quotient*plaintext % m);
+    cipherletter += (constant % m);
+    cipherletter = cipherletter % m;
+    return cipherletter;
+}
+
+int decipher_afin(int cipherletter, int b, int a_inv, int m){
+    cipherletter = (cipherletter - b) % m;
+    printf("!!%d ", cipherletter);
+    cipherletter = (cipherletter * a_inv) % m;
+    return cipherletter;
+}
 
 /* MAIN FUNCTION */
 int main(int argc, char *argv[]) {
@@ -143,34 +165,76 @@ int main(int argc, char *argv[]) {
         return ERR;
     }
 
-    /* ---------------------------- */
-    /* FUNCTIONALITY OF THE PROGRAM */
-    /* ---------------------------- */
+    /* ------------- */
+    /* FUNCTIONALITY */
+    /* ------------- */
     int m = options.ciphertext_size;
+    int a = options.afin_mult;
+    int b = options.afin_const;
 
-    /* Applying modulus */
-    options.afin_mult = options.afin_mult % m;
-    options.afin_const = options.afin_const % m;
 
+
+    int a_inv_exists = check_a_inverse(options.afin_mult, options.ciphertext_size);
+    if(!a_inv_exists){
+        fprintf(stderr, "<a> and <m> not primes => ABORTING!");
+        return ERR;
+    }
+    int a_inverse;
+    int y;
+    gcdExtended(a, m, &a_inverse, &y);
+
+    int conversion_table[m];
     int i;
+    for (i=0; i<m; i++){
+        conversion_table[i] = cipher_afin(i, options.afin_mult, options.afin_const, m);        
+    }
 
-    for (i=0; i<options.ciphertext_size; i++){
-        printf("i=%d\n",i);
+    char inpt[] = "toy prozBANDO";
+    int n_in = strlen(inpt);
+    int inptnum[n_in];    
+    bool caps[n_in];
 
-        int enc = ((options.afin_mult*i % m) + (options.afin_const % m)) % m;
-        printf("ax + b = %d (mod m) \n", enc);
+    for(i=0; i< n_in; i++){
+        caps[i] = false;
 
-        int x, y;
-        int prueba = euclidExtended(m, options.afin_mult, &x, &y);
-        printf("El valor de prueba es %d\n", prueba);
-
-        int dec = (((enc - options.afin_const % m) * prueba) % m) % m;
-        if (dec < 0){
-            dec = options.ciphertext_size - dec;
+        if (inpt[i] >= 'A' && inpt[i] <= 'Z'){
+            caps[i] = true;
         }
 
-        printf("(y-b) * a = %d (mod m) \n", dec);
+        inptnum[i] = (int)inpt[i] % 32;
     }
+
+
+    int ciphertext[n_in];
+    char decoded[n_in];
+
+    for(i=0; i < n_in; i++){
+        printf("%d => ", inptnum[i]);
+        ciphertext[i] = cipher_afin(inptnum[i], a, b, m);
+        printf("%d => ", ciphertext[i]);
+        ciphertext[i] = decipher_afin(ciphertext[i], b, a_inverse, m);
+        if(ciphertext[i] < 0){
+            ciphertext[i] = m - ciphertext[i];
+        }
+        printf("%d\n", ciphertext[i]);
+    }
+
+    printf("\n");
+
+    for (i=0; i < n_in; i++){
+
+        if (caps[i]){
+            decoded[i] = ciphertext[i] + 'A';
+        } else {
+            decoded[i] = ciphertext[i] + 'a';
+        }
+        
+    }
+
+    printf("%s", decoded);
+    
+    printf("\n");
+    return 0;
 
     /* COMPROBAR ENTRE ENCRYPT Y DECRYPT MEDIANTE LA BANDERA options.mode */
     /*
@@ -179,3 +243,10 @@ int main(int argc, char *argv[]) {
 
     /* UTILIZAR LOS VALORES DE 'm', 'a' y 'b' para hacer el cifrado afin. */
 }
+
+/*
+        cipherletter = cipher_afin(i, options.afin_mult, options.afin_const, m);
+        conversion_table[i] = cipherletter;
+        cipherletter = decipher_afin(cipherletter, options.afin_const, a_inverse, m)
+        */
+       

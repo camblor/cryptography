@@ -44,11 +44,7 @@ int gcdExtended(int a, int b, int *x, int *y)
     /* Update Remainders Lineal Combination*/ 
     *x = y1 - (b/a) * x1; 
     *y = x1;
-
-    /*printf("(%d * %d) + (%d * %d) = %d\n", a,*x,b,*y, (a * (*x) + b * (*y)));*/
-
-    //printf("X=%d\nY=%d\n", *x, *y);
-  
+    
     return gcd; 
 } 
 
