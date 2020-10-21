@@ -30,16 +30,27 @@ bool check_a_inverse(int a, int m){
 }
 
 int cipher_afin(int plaintext, int quotient, int constant, int m){
-    int cipherletter = (quotient*plaintext % m);
-    cipherletter += (constant % m);
+    int cipherletter = (quotient*plaintext) % m;
+    cipherletter = (cipherletter + constant)% m;
+    if(cipherletter < 0){
+        cipherletter = m + cipherletter;
+    }
     cipherletter = cipherletter % m;
+    if(cipherletter < 0){
+        cipherletter = m + cipherletter;
+    }
     return cipherletter;
 }
 
 int decipher_afin(int cipherletter, int b, int a_inv, int m){
     cipherletter = (cipherletter - b) % m;
-    printf("!!%d ", cipherletter);
+    if(cipherletter < 0){
+        cipherletter = m + cipherletter;
+    }
     cipherletter = (cipherletter * a_inv) % m;
+    if(cipherletter < 0){
+        cipherletter = m + cipherletter;
+    }
     return cipherletter;
 }
 
@@ -168,32 +179,44 @@ int main(int argc, char *argv[]) {
     /* ------------- */
     /* FUNCTIONALITY */
     /* ------------- */
+
+
+    /* Main variables*/
     int m = options.ciphertext_size;
     int a = options.afin_mult;
     int b = options.afin_const;
 
 
+    /* Auxiliary variables */
+    int a_inv_exists;
+    int a_inverse;
+    int y;
 
-    int a_inv_exists = check_a_inverse(options.afin_mult, options.ciphertext_size);
+    /* Computation variables */
+    int i;
+    char inpt[] = "ABCDEFGHIJ KLMNOPQRSTUVWXYZ";
+    int n_in = strlen(inpt);
+    int inptnum[n_in];    
+    bool caps[n_in];
+    int ciphertext[n_in];
+    char decoded[n_in];
+
+
+    /* Checks a^-1 existance in Z_m */
+    a_inv_exists = check_a_inverse(options.afin_mult, options.ciphertext_size);
     if(!a_inv_exists){
         fprintf(stderr, "<a> and <m> not primes => ABORTING!");
         return ERR;
     }
-    int a_inverse;
-    int y;
+
+    /* Gets a_-1*/
     gcdExtended(a, m, &a_inverse, &y);
 
-    int conversion_table[m];
-    int i;
-    for (i=0; i<m; i++){
-        conversion_table[i] = cipher_afin(i, options.afin_mult, options.afin_const, m);        
-    }
+    /* TEXT TO CIPHER */
+    printf("%s ", inpt);
+    
 
-    char inpt[] = "toy prozBANDO";
-    int n_in = strlen(inpt);
-    int inptnum[n_in];    
-    bool caps[n_in];
-
+    /* Characters to alphabet index */
     for(i=0; i< n_in; i++){
         caps[i] = false;
 
@@ -201,52 +224,35 @@ int main(int argc, char *argv[]) {
             caps[i] = true;
         }
 
-        inptnum[i] = (int)inpt[i] % 32;
+        inptnum[i] = (int)inpt[i] % 32 - 1;
     }
 
+    printf("=> ");
 
-    int ciphertext[n_in];
-    char decoded[n_in];
-
+    /* Ciphering and Deciphering text. */
     for(i=0; i < n_in; i++){
-        printf("%d => ", inptnum[i]);
+        
         ciphertext[i] = cipher_afin(inptnum[i], a, b, m);
-        printf("%d => ", ciphertext[i]);
+        printf("%d", ciphertext[i]);
         ciphertext[i] = decipher_afin(ciphertext[i], b, a_inverse, m);
         if(ciphertext[i] < 0){
             ciphertext[i] = m - ciphertext[i];
         }
-        printf("%d\n", ciphertext[i]);
     }
 
     printf("\n");
 
+    /* Deciphered text conversion to characters */
     for (i=0; i < n_in; i++){
-
         if (caps[i]){
-            decoded[i] = ciphertext[i] + 'A';
+            decoded[i] = (char) 'A' + ciphertext[i];
         } else {
-            decoded[i] = ciphertext[i] + 'a';
+            decoded[i] = (char) 'a' + ciphertext[i];
         }
-        
+        printf("%d", ciphertext[i]);        
     }
+    decoded[i] = 0;
 
-    printf("%s", decoded);
-    
-    printf("\n");
+    printf(" => %s\n", decoded);
     return 0;
-
-    /* COMPROBAR ENTRE ENCRYPT Y DECRYPT MEDIANTE LA BANDERA options.mode */
-    /*
-    
-    */
-
-    /* UTILIZAR LOS VALORES DE 'm', 'a' y 'b' para hacer el cifrado afin. */
 }
-
-/*
-        cipherletter = cipher_afin(i, options.afin_mult, options.afin_const, m);
-        conversion_table[i] = cipherletter;
-        cipherletter = decipher_afin(cipherletter, options.afin_const, a_inverse, m)
-        */
-       
