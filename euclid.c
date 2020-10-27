@@ -21,6 +21,7 @@ int gcd(int a, int b){
     return gcd(b%a, a);
 }
 
+
 /*
 Funcion: gcdExtended ( Greater Common Divisor and Lineal Combination of Remainders)
 Entrada: Integers to evaluate ( a, b ) and Lineal Combination Integers pointers ( x, y )

@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 #include "euclid.c"
+#include <gmp.h>
 
 #define ERR -1
 
@@ -14,60 +16,252 @@ typedef enum { false, true } bool;
 /* Parameters data type*/
 typedef struct {
     bool mode;
-    int ciphertext_size;
-    int afin_mult;
-    int afin_const;
-    FILE *input;
-    FILE *output;
+    char* ciphertext_size;
+    char* afin_mult;
+    char* afin_const;
+    char* input;
+    char* output;
 
 } parameters_afin;
 
-bool check_a_inverse(int a, int m){
-    if (euclid(a, m) == 1){
-        return true;
+void cipher_afin(mpz_t plaintext, mpz_t quotient, mpz_t constant, mpz_t modulus){
+    mpz_mul(plaintext, quotient, plaintext);
+    mpz_mod(plaintext, plaintext, modulus);
+    mpz_add(plaintext, plaintext, constant);
+    mpz_mod(plaintext, plaintext, modulus);
+
+    if (mpz_get_si(plaintext) < 0){
+        mpz_add(plaintext, plaintext, modulus);
     }
-    return false;
+    mpz_mod(plaintext, plaintext, modulus);
 }
 
-int cipher_afin(int plaintext, int quotient, int constant, int m){
-    int cipherletter = (quotient*plaintext) % m;
-    cipherletter = (cipherletter + constant)% m;
-    if(cipherletter < 0){
-        cipherletter = m + cipherletter;
+void decipher_afin(mpz_t cipherletter, mpz_t a_inv, mpz_t constant, mpz_t modulus){
+    mpz_sub(cipherletter, cipherletter, constant);
+    mpz_mod(cipherletter, cipherletter, modulus);
+
+    if (mpz_get_si(cipherletter) < 0){
+        mpz_add(cipherletter, cipherletter, modulus);
     }
-    cipherletter = cipherletter % m;
-    if(cipherletter < 0){
-        cipherletter = m + cipherletter;
+
+    mpz_mul(cipherletter, cipherletter, a_inv);
+    mpz_mod(cipherletter, cipherletter, modulus);
+
+    if (mpz_get_si(cipherletter) < 0){
+        mpz_add(cipherletter, cipherletter, modulus);
     }
-    return cipherletter;
 }
 
-int decipher_afin(int cipherletter, int b, int a_inv, int m){
-    cipherletter = (cipherletter - b) % m;
-    if(cipherletter < 0){
-        cipherletter = m + cipherletter;
+/*
+    Function: prepare_string
+    Description: Prepares input for encryption.
+*/
+void prepare_string(char* s) {
+    const char* d = s;
+    do {
+        while (*d == ' ') {
+            ++d;
+        }
+        if (!isspace(*d)) toupper(*d);
+    } while (*s++ = *d++);
+}
+
+/*
+    Function: CifrarTexto
+    Description: 
+*/
+void CifrarTexto(parameters_afin options){
+    /* Main variables*/
+    mpz_t modulus, multiplier, constant;
+    mpz_t a_inverse, y, gcd;
+    mpz_t* inputnum;
+    char* ciphertext;
+    int i, j;
+    int inputlen, inputflag;
+    char * buffer = 0;
+    long length;
+    FILE * f;
+    if(strcmp(options.input, "stdio")) f = fopen (options.input, "rb");
+
+    if (f)
+    {
+        fseek (f, 0, SEEK_END);
+        length = ftell (f);
+        fseek (f, 0, SEEK_SET);
+        buffer = malloc (length);
+        if (buffer)
+        {
+            fread (buffer, 1, length, f);
+        }
+        fclose (f);
     }
-    cipherletter = (cipherletter * a_inv) % m;
-    if(cipherletter < 0){
-        cipherletter = m + cipherletter;
+
+
+    /* Variable Initialization for libGMP*/
+    mpz_init(modulus);
+    mpz_init(multiplier);
+    mpz_init(constant);
+    mpz_init(a_inverse);
+    mpz_init(y);
+    mpz_init(gcd);
+
+    /* Store as gmp variables*/
+    mpz_set_str(multiplier, options.afin_mult, 10);
+    mpz_set_str(constant, options.afin_const, 10);
+    mpz_set_str(modulus, options.ciphertext_size, 10);
+
+    /* Checks A inverse existance in Z_m */
+    mpz_gcdext(gcd, a_inverse, y, multiplier, modulus);
+    if (mpz_get_si(gcd) != 1){
+        fprintf(stderr, "<a> and <m> not primes => ABORT\n");
+        return;
     }
-    return cipherletter;
+    mpz_clear(gcd);
+    mpz_clear(y);
+    mpz_clear(a_inverse);
+
+    /* Prepare input to cipher */
+    prepare_string(buffer);
+    inputlen = strlen(buffer);
+    inputnum = (mpz_t*) malloc(sizeof(mpz_t) * inputlen);
+    ciphertext = (char*) malloc((sizeof(char) + 1) * inputlen);
+    inputflag = strcmp(options.output, "stdout");
+    if (inputflag) f = fopen(options.output, "w+");
+    
+
+    /* Cipher text */
+    char temp;
+    printf("%s\n: ", buffer);
+    for(i=0; i< inputlen; i++){
+        mpz_init(inputnum[i]);
+        mpz_set_d(inputnum[i], buffer[i] % 32 - 1);
+        cipher_afin(inputnum[i], multiplier, constant, modulus);
+        temp = (char) mpz_get_si(inputnum[i]);
+        if (inputflag){
+            printf("%c", temp);
+            fprintf(f, "%c", temp);
+        } else {
+            fprintf(stdout, "%c", temp);
+        }
+        
+    }
+    printf("\n");
+    if (inputflag) fclose(f);
+
+    for(i=0;i<inputlen;i++){
+        mpz_clear(inputnum[i]);
+    }
+    free(inputnum);
+    free(ciphertext);
+    mpz_clear(modulus);
+    mpz_clear(multiplier);
+    mpz_clear(constant);
+}
+
+
+void DescifrarTexto(parameters_afin options){
+    /* Main variables*/
+    mpz_t modulus, multiplier, constant;
+    mpz_t a_inverse, y, gcd;
+    mpz_t* inputnum;
+    int inputflag, outputflag;
+    char* ciphertext;
+    int i, j;
+    int inputlen;
+    long length;
+    char * buffer = 0;
+    FILE * f;
+
+    inputflag = strcmp(options.input, "stdio");
+    outputflag = strcmp(options.output, "stdout");
+    
+    if(inputflag) f = fopen (options.input, "rb");
+
+    if (f)
+    {
+        fseek (f, 0, SEEK_END);
+        length = ftell (f);
+        fseek (f, 0, SEEK_SET);
+        buffer = malloc (length);
+        if (buffer)
+        {
+            fread (buffer, 1, length, f);
+        }
+        fclose (f);
+    }
+
+    /* Variable Initialization for libGMP*/
+    mpz_init(modulus);
+    mpz_init(multiplier);
+    mpz_init(constant);
+    mpz_init(a_inverse);
+    mpz_init(y);
+    mpz_init(gcd);
+
+    /* Store as gmp variables*/
+    mpz_set_str(multiplier, options.afin_mult, 10);
+    mpz_set_str(constant, options.afin_const, 10);
+    mpz_set_str(modulus, options.ciphertext_size, 10);
+
+    /* Checks A inverse existance in Z_m */
+    mpz_gcdext(gcd, a_inverse, y, multiplier, modulus);
+    if (mpz_get_si(gcd) != 1){
+        fprintf(stderr, "<a> and <m> not primes => ABORT\n");
+        return;
+    }
+    mpz_clear(gcd);
+    mpz_clear(y);
+    
+    /* Prepare input to cipher */
+    inputlen = strlen(buffer);
+    inputnum = (mpz_t*) malloc(sizeof(mpz_t) * inputlen);
+    ciphertext = (char*) malloc((sizeof(char) + 1) * inputlen);
+    ciphertext = (char*) malloc((sizeof(char) + 1) * inputlen);
+
+    if (outputflag) f = fopen(options.output, "w+");
+    /* Cipher text */
+    char temp;
+    for(i=0; i< inputlen; i++){
+        mpz_init(inputnum[i]);
+        mpz_set_d(inputnum[i], buffer[i]);
+        decipher_afin(inputnum[i], a_inverse, constant, modulus);
+        temp = mpz_get_si(inputnum[i]) + 'A';
+        if (outputflag){
+            fprintf(f, "%c", temp);
+        } else {
+            fprintf(stdout, "%c", temp);
+        }
+    }
+    
+    if (outputflag) fclose(f);
+    else printf("\n");
+
+    for(i=0;i<inputlen;i++){
+        mpz_clear(inputnum[i]);
+    }
+    free(inputnum);
+    free(ciphertext);
+    mpz_clear(a_inverse);
+    mpz_clear(modulus);
+    mpz_clear(multiplier);
+    mpz_clear(constant); 
 }
 
 /* MAIN FUNCTION */
 int main(int argc, char *argv[]) {
 
-    if (argc < 2){
-        fprintf(stderr, "Introduzca al menos un argumento.\n");
-        return ERR;
-    }
 
     /* Parameter options*/
     parameters_afin options;
 
     /* Default mode: Encryption */
-    options.mode = false;
+    options.mode = true;
+    
+    options.input = malloc(sizeof(char) * strlen("stdin") + 1);
+    options.output = malloc(sizeof(char) * strlen("stdout") + 1);
 
+    strcpy(options.input, "stdin");
+    strcpy(options.output, "stdout");
     /* Required parameters */
     bool ciphertext_size_flag = false;
     bool afin_mult = false;
@@ -85,7 +279,7 @@ int main(int argc, char *argv[]) {
     opterr = 0;
 
     /* Argument parsing with common arguments and list of possible options */
-    while ((c = getopt (argc, argv, "CDm:a:b:i::o::")) != -1)
+    while ((c = getopt (argc, argv, "CDm:a:b:i:o:")) != -1)
     {
         /* Checks if the selected option is in our list*/
         switch (c)
@@ -96,7 +290,7 @@ int main(int argc, char *argv[]) {
 
             /* DECRYPTION */
             case 'D':
-                options.mode = true;
+                options.mode = false;
                 break;
 
             /* CIPHERTEXT SPACE SITE */
@@ -105,7 +299,9 @@ int main(int argc, char *argv[]) {
                     doDefault = true;
                     break;
                 }
-                options.ciphertext_size = atoi(optarg);
+            
+                options.ciphertext_size = (char *) malloc(strlen(optarg) * sizeof(char) + 1);
+                strcpy(options.ciphertext_size, optarg);
                 ciphertext_size_flag = true;
                 break;
             
@@ -115,7 +311,8 @@ int main(int argc, char *argv[]) {
                         doDefault = true;
                         break;
                 }
-                options.afin_mult = atoi(optarg);
+                options.afin_mult = (char *) malloc(strlen(optarg) * sizeof(char) + 1);
+                strcpy(options.afin_mult, optarg);
                 afin_mult = true;
                 break;
 
@@ -125,18 +322,21 @@ int main(int argc, char *argv[]) {
                         doDefault = true;
                         break;
                 }
-                options.afin_const = atoi(optarg);
+                options.afin_const = (char *) malloc(strlen(optarg) * sizeof(char) + 1);
+                strcpy(options.afin_const, optarg);
                 afin_const = true;
                 break;
             
             /* INPUT FILE */
             case 'i':
-                options.input = stdin;
+                options.input = (char *) realloc(options.input, strlen(optarg) * sizeof(char) + 1);
+                strcpy(options.input, optarg);                
                 break;
             
             /* OUTPUT FILE */
             case 'o':
-                options.output = stdout;
+                options.output = (char *) realloc(options.output, strlen(optarg) * sizeof(char) + 1);
+                strcpy(options.output, optarg);
                 break;
             
             /* ERROR CONTROL */
@@ -179,80 +379,13 @@ int main(int argc, char *argv[]) {
     /* ------------- */
     /* FUNCTIONALITY */
     /* ------------- */
-
-
-    /* Main variables*/
-    int m = options.ciphertext_size;
-    int a = options.afin_mult;
-    int b = options.afin_const;
-
-
-    /* Auxiliary variables */
-    int a_inv_exists;
-    int a_inverse;
-    int y;
-
-    /* Computation variables */
-    int i;
-    char inpt[] = "ABCDEFGHIJ KLMNOPQRSTUVWXYZ";
-    int n_in = strlen(inpt);
-    int inptnum[n_in];    
-    bool caps[n_in];
-    int ciphertext[n_in];
-    char decoded[n_in];
-
-
-    /* Checks a^-1 existance in Z_m */
-    a_inv_exists = check_a_inverse(options.afin_mult, options.ciphertext_size);
-    if(!a_inv_exists){
-        fprintf(stderr, "<a> and <m> not primes => ABORTING!");
-        return ERR;
+    if (options.mode){
+        CifrarTexto(options);
+    } else {
+        DescifrarTexto(options);
     }
-
-    /* Gets a_-1*/
-    gcdExtended(a, m, &a_inverse, &y);
-
-    /* TEXT TO CIPHER */
-    printf("%s ", inpt);
+    
     
 
-    /* Characters to alphabet index */
-    for(i=0; i< n_in; i++){
-        caps[i] = false;
-
-        if (inpt[i] >= 'A' && inpt[i] <= 'Z'){
-            caps[i] = true;
-        }
-
-        inptnum[i] = (int)inpt[i] % 32 - 1;
-    }
-
-    printf("=> ");
-
-    /* Ciphering and Deciphering text. */
-    for(i=0; i < n_in; i++){
-        
-        ciphertext[i] = cipher_afin(inptnum[i], a, b, m);
-        printf("%d", ciphertext[i]);
-        ciphertext[i] = decipher_afin(ciphertext[i], b, a_inverse, m);
-        if(ciphertext[i] < 0){
-            ciphertext[i] = m - ciphertext[i];
-        }
-    }
-
-    printf("\n");
-
-    /* Deciphered text conversion to characters */
-    for (i=0; i < n_in; i++){
-        if (caps[i]){
-            decoded[i] = (char) 'A' + ciphertext[i];
-        } else {
-            decoded[i] = (char) 'a' + ciphertext[i];
-        }
-        printf("%d", ciphertext[i]);        
-    }
-    decoded[i] = 0;
-
-    printf(" => %s\n", decoded);
     return 0;
 }
