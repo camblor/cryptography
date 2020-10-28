@@ -1,6 +1,5 @@
 /*
 Cryptography
-Author: Alfonso Camblor García
 Content:
     - Basic Euclid Algorithm (Máximo Común Divisor)
     - Extended Euclid Algorithm (Greater Common Divisor and Lineal Combination of Remainders)

@@ -58,13 +58,13 @@ void decipher_afin(mpz_t cipherletter, mpz_t a_inv, mpz_t constant, mpz_t modulu
     Description: Prepares input for encryption.
 */
 void prepare_string(char* s) {
-    const char* d = s;
+    char* d = s;
     do {
         while (*d == ' ') {
             ++d;
         }
-        if (!isspace(*d)) toupper(*d);
-    } while (*s++ = *d++);
+        if (!isspace(*d)) *d = toupper(*d);
+    } while ((*s++ = *d++));
 }
 
 /*
@@ -76,7 +76,7 @@ void CifrarTexto(parameters_afin options){
     mpz_t modulus, multiplier, constant;
     mpz_t a_inverse, y, gcd;
     mpz_t* inputnum;
-    int i, j;
+    int i;
     int inputlen, inputflag, outputflag;
     char * buffer = 0;
     long length;
@@ -172,7 +172,7 @@ void DescifrarTexto(parameters_afin options){
     mpz_t a_inverse, y, gcd;
     mpz_t* inputnum;
     int inputflag, outputflag;
-    int i, j;
+    int i;
     long inputlen;
     char * buffer = 0;
     FILE * f;
