@@ -26,7 +26,6 @@ mpz_t* invMult(int base, int* n_inversos) {
     /* Preparación de variables */
 	mpz_t * inverses = (mpz_t*) malloc (base * sizeof(mpz_t));	
 	mpz_t modulus, multiplier, y, a_inverse, gcd;
-	int inv = 0;
 	int num;
     *n_inversos = 0;
 	mpz_init(modulus);
@@ -91,14 +90,14 @@ void decipher_afin(mpz_t cipherletter, mpz_t a_inv, mpz_t constant, mpz_t modulu
 */
 void prepare_string(char* s, long* length) {
     char* d = s;
-	*length = 0;
+	(*length) = 0;
     do {
         while (*d == ' ' || *d == '\n') {
             ++d;
         }
         if (!isspace(*d)) *d = toupper(*d);
-		*length++;
-    } while (*s++ = *d++);
+		(*length)++;
+    } while ((*s++ = *d++));
 }
 
 /*
@@ -137,13 +136,14 @@ void CifrarTexto(parameters_afin options){
                 fread (buffer, 1, length, f);
             }
             fclose (f);
+			buffer[length] = 0;
         }
     } else {
         buffer = (char*) malloc(sizeof(char) * (BUFSIZE + 1));
         fscanf(stdin,"%s",buffer);
     }
 
-	buffer[length] = 0;
+	
     
 	
     
@@ -238,13 +238,15 @@ void DescifrarTexto(parameters_afin options){
                 
             }
             fclose (f);
+			buffer[inputlen] = 0;
         }
     } else {
         buffer = (char*) malloc(sizeof(char) * (BUFSIZE + 1));
         fscanf(stdin,"%s",buffer);
+		inputlen = strlen(buffer);
     }
 
-	buffer[inputlen] = 0;
+	
 
     /* Variable Initialization for libGMP*/
     mpz_init(modulus);
@@ -303,85 +305,120 @@ void DescifrarTexto(parameters_afin options){
     mpz_clear(constant); 
 }
 
-int main (int argc, char **argv){
-
-	int long_index=0, end=0, size=0, seed = 1;
-	char opt;
-	static int flagD=0,flagC=0;
-	char* text=NULL,*c=NULL,*d=NULL,* buff=NULL,fltr[100]="";
-	FILE  * fout =stdout, *fin=stdin;
-	int fseed=0;
-	static struct option options[] = {
-	    {"C",no_argument,&flagC,1},
-	    {"D",no_argument,&flagD, 1},
-	    {"s",required_argument,0,'3'},
-	    {"i",required_argument, 0, '6'},
-	    {"o",required_argument, 0, '7'},
-	    {0,0,0,0}
-	};
-
-	optarg =NULL;
-	while ((opt = getopt_long_only(argc, argv,"3:4:5:6:7:", options, &long_index )) != -1){
-		switch(opt){
-			case '3':
-				fseed=1;
-				seed = atoi(optarg);
-				printf("Seed = %d\n", seed);
-			break;
-			case '6':
-				if(flagC){
-					strcpy(fltr,"./filtro ");
-					strcat(fltr, optarg);
-					strcat(fltr, " F");
-					strcat(fltr, optarg);
-					printf("orden=%s\n",fltr );
-					if(!system(fltr)){
-						return 0;
-					}
-					strcpy(fltr,"F");	
-				}
-				strcat(fltr, optarg);
-				printf("archivo=%s\n",fltr );
-				fin=fopen (fltr, "r");
-				if(fin==NULL){
-					printf("\nError: el archivo %s no existe\n", optarg);
-					return 0;
-				}
-			break;
-			case '7':
-				fout=fopen (optarg, "w");
-			break;
-			case'?':
-				printf("%s {-C|-D} {-s seed} [-i f ile in ] [-o f ile out ]\n", argv[0]);
-			break;
-
-		}
-	}
-	if (fseed==0 || flagD==0 && flagC==0 || flagD==1 && flagC==1){
-		printf("%s {-C|-D} {-s seed} [-i f ile in ] [-o f ile out ]\n", argv[0] );
-		return 0;
-	}
-    parameters_afin optionsXD;
-    optionsXD.output = malloc((strlen("hehe") + 1) * sizeof(char));
-    optionsXD.input = malloc((strlen("j.dea") + 1) * sizeof(char));
-	optionsXD.seed = malloc((sizeof(int)) * 1);
-    strcpy(optionsXD.input, "j.dea");
-    strcpy(optionsXD.output, "hehe");
-	strcpy(optionsXD.seed, "4");
-
-    CifrarTexto(optionsXD);
-
-	optionsXD.output = realloc(optionsXD.output, (strlen("out") + 1) * sizeof(char));
-    optionsXD.input = realloc(optionsXD.input, (strlen("hehe") + 1) * sizeof(char));
-    strcpy(optionsXD.input, "hehe");
-	strcpy(optionsXD.output, "out");
-
-    DescifrarTexto(optionsXD);
+/* MAIN FUNCTION */
+int main(int argc, char *argv[]) {
 
 
-	free(optionsXD.output);
-	free(optionsXD.input);
-	free(optionsXD.seed);
+    /* Parameter options*/
+    parameters_afin options;
 
-	return 0;
+    /* Default mode: Encryption */
+    options.mode = true;
+    
+    options.input = malloc(sizeof(char) * strlen("stdin") + 1);
+    options.output = malloc(sizeof(char) * strlen("stdout") + 1);
+
+    strcpy(options.input, "stdin");
+    strcpy(options.output, "stdout");
+    /* Required parameters */
+    bool seed_flag = false;
+
+    /* Error controller*/
+    bool doDefault = false;
+
+    /* ------------------------- */
+    /* PROGRAM ARGUMENTS PARSING */
+    /* ------------------------- */
+    
+    /* Variable declaration */
+    int c;
+    opterr = 0;
+
+    /* Argument parsing with common arguments and list of possible options */
+    while ((c = getopt (argc, argv, "CDs:i:o:")) != -1)
+    {
+        /* Checks if the selected option is in our list*/
+        switch (c)
+        {
+            /* ENCRYPTION */
+            case 'C':
+                break;
+
+            /* DECRYPTION */
+            case 'D':
+                options.mode = false;
+                break;
+
+            /* SEED */
+            case 's':
+                if (!isdigit(*optarg)){
+                        doDefault = true;
+                        break;
+                }
+                options.seed = (char *) malloc(strlen(optarg) * sizeof(char) + 1);
+                strcpy(options.seed, optarg);
+				seed_flag = true;
+                break;
+            
+            /* INPUT FILE */
+            case 'i':
+                options.input = (char *) realloc(options.input, strlen(optarg) * sizeof(char) + 1);
+                strcpy(options.input, optarg);                
+                break;
+            
+            /* OUTPUT FILE */
+            case 'o':
+                options.output = (char *) realloc(options.output, strlen(optarg) * sizeof(char) + 1);
+                strcpy(options.output, optarg);
+                break;
+            
+            /* ERROR CONTROL */
+            case '?':
+            default:
+                doDefault = true;
+                break;
+        }
+
+        /* ERROR CONTROL FUNCTION FOR ARGUMENT PARSING */
+        if (doDefault){
+            if (optopt == 's')
+                fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+            else if (optopt == 'i')
+                fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+            else if (optopt == 'o')
+                fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+            else if (isprint (optopt))
+                fprintf (stderr, "Unknown option '-%c'.\n", optopt);
+            else
+                fprintf (stderr, "Wrong value for -%c.\n", c);
+            
+            free(options.input);
+            free(options.output);
+            return 1;
+        }
+    }
+    /* ERROR CONTROL, REQUIRED ARGUMENTS: {-E, -D}, -s */
+    if( !seed_flag ){
+        fprintf (stderr, "REQUIRED ARGUMENTS:\n");
+        fprintf (stderr, "\t{-C (Encrypt), -D (Decrypt)} (Default: C)\n");
+        fprintf (stderr, "\t-s <seed (number)>\n");
+		free(options.input);
+        free(options.output);
+        return ERR;
+    }
+
+    /* ------------- */
+    /* FUNCTIONALITY */
+    /* ------------- */
+    
+    if (options.mode){
+        CifrarTexto(options);
+    } else {
+        DescifrarTexto(options);
+    }
+    free(options.seed);
+    free(options.input);
+    free(options.output);
+
+    return 0;
 }
