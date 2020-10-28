@@ -142,12 +142,6 @@ void CifrarTexto(parameters_afin options){
         buffer = (char*) malloc(sizeof(char) * (BUFSIZE + 1));
         fscanf(stdin,"%s",buffer);
     }
-
-	
-    
-	
-    
-
     
     /* Variable Initialization for libGMP*/
     mpz_init(modulus);
@@ -166,8 +160,7 @@ void CifrarTexto(parameters_afin options){
     if (outputflag) f = fopen(options.output, "w+");
     
 	
-    /* Cipher text */
-    
+    /* Cipher text */    
     char temp;
     for(i=0; i< length; i++){
         mpz_init(inputnum[i]);
