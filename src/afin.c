@@ -8,6 +8,7 @@
 #include <gmp.h>
 
 #define ERR -1
+#define BUFSIZE 512
 
 
 /* Boolean data type*/
@@ -75,28 +76,37 @@ void CifrarTexto(parameters_afin options){
     mpz_t modulus, multiplier, constant;
     mpz_t a_inverse, y, gcd;
     mpz_t* inputnum;
-    char* ciphertext;
     int i, j;
-    int inputlen, inputflag;
+    int inputlen, inputflag, outputflag;
     char * buffer = 0;
     long length;
     FILE * f;
-    if(strcmp(options.input, "stdio")) f = fopen (options.input, "rb");
 
-    if (f)
-    {
-        fseek (f, 0, SEEK_END);
-        length = ftell (f);
-        fseek (f, 0, SEEK_SET);
-        buffer = malloc (length);
-        if (buffer)
+    inputflag = strcmp(options.input, "stdin");
+    outputflag = strcmp(options.output, "stdout");
+
+    if(inputflag){
+        f = fopen (options.input, "rb");
+        if (f)
         {
-            fread (buffer, 1, length, f);
+            fseek (f, 0, SEEK_END);
+            length = ftell (f);
+            fseek (f, 0, SEEK_SET);
+            buffer = (char*) malloc (sizeof(char) *length);
+            if (buffer)
+            {
+                fread (buffer, 1, length, f);
+            }
+            fclose (f);
         }
-        fclose (f);
+    } else {
+        buffer = (char*) malloc(sizeof(char) * BUFSIZE);
+        fscanf(stdin,"%s",buffer);
     }
 
+    
 
+    
     /* Variable Initialization for libGMP*/
     mpz_init(modulus);
     mpz_init(multiplier);
@@ -124,35 +134,32 @@ void CifrarTexto(parameters_afin options){
     prepare_string(buffer);
     inputlen = strlen(buffer);
     inputnum = (mpz_t*) malloc(sizeof(mpz_t) * inputlen);
-    ciphertext = (char*) malloc((sizeof(char) + 1) * inputlen);
-    inputflag = strcmp(options.output, "stdout");
-    if (inputflag) f = fopen(options.output, "w+");
+
+    if (outputflag) f = fopen(options.output, "w+");
     
 
     /* Cipher text */
     char temp;
-    printf("%s\n: ", buffer);
     for(i=0; i< inputlen; i++){
         mpz_init(inputnum[i]);
         mpz_set_d(inputnum[i], buffer[i] % 32 - 1);
         cipher_afin(inputnum[i], multiplier, constant, modulus);
         temp = (char) mpz_get_si(inputnum[i]);
-        if (inputflag){
-            printf("%c", temp);
+        if (outputflag){
             fprintf(f, "%c", temp);
         } else {
             fprintf(stdout, "%c", temp);
         }
-        
     }
-    printf("\n");
-    if (inputflag) fclose(f);
+    
+    if (outputflag) fclose(f);
+    else printf("\n");
 
     for(i=0;i<inputlen;i++){
         mpz_clear(inputnum[i]);
     }
     free(inputnum);
-    free(ciphertext);
+    free(buffer);
     mpz_clear(modulus);
     mpz_clear(multiplier);
     mpz_clear(constant);
@@ -165,30 +172,33 @@ void DescifrarTexto(parameters_afin options){
     mpz_t a_inverse, y, gcd;
     mpz_t* inputnum;
     int inputflag, outputflag;
-    char* ciphertext;
     int i, j;
-    int inputlen;
-    long length;
+    long inputlen;
     char * buffer = 0;
     FILE * f;
 
-    inputflag = strcmp(options.input, "stdio");
+    inputflag = strcmp(options.input, "stdin");
     outputflag = strcmp(options.output, "stdout");
     
-    if(inputflag) f = fopen (options.input, "rb");
-
-    if (f)
-    {
-        fseek (f, 0, SEEK_END);
-        length = ftell (f);
-        fseek (f, 0, SEEK_SET);
-        buffer = malloc (length);
-        if (buffer)
-        {
-            fread (buffer, 1, length, f);
+    if(inputflag){
+        f = fopen (options.input, "rb");
+        if (f){
+            fseek (f, 0, SEEK_END);
+            inputlen = ftell (f);
+            fseek (f, 0, SEEK_SET);
+            buffer = (char*) malloc(sizeof(char)*inputlen);
+            if (buffer)
+            {
+                fread (buffer, 1, inputlen, f);
+                
+            }
+            fclose (f);
         }
-        fclose (f);
+    } else {
+        buffer = (char*) malloc(sizeof(char) * BUFSIZE);
+        fscanf(stdin,"%s",buffer);
     }
+
 
     /* Variable Initialization for libGMP*/
     mpz_init(modulus);
@@ -213,10 +223,7 @@ void DescifrarTexto(parameters_afin options){
     mpz_clear(y);
     
     /* Prepare input to cipher */
-    inputlen = strlen(buffer);
     inputnum = (mpz_t*) malloc(sizeof(mpz_t) * inputlen);
-    ciphertext = (char*) malloc((sizeof(char) + 1) * inputlen);
-    ciphertext = (char*) malloc((sizeof(char) + 1) * inputlen);
 
     if (outputflag) f = fopen(options.output, "w+");
     /* Cipher text */
@@ -240,7 +247,7 @@ void DescifrarTexto(parameters_afin options){
         mpz_clear(inputnum[i]);
     }
     free(inputnum);
-    free(ciphertext);
+    free(buffer);
     mpz_clear(a_inverse);
     mpz_clear(modulus);
     mpz_clear(multiplier);
@@ -363,6 +370,8 @@ int main(int argc, char *argv[]) {
             else
                 fprintf (stderr, "Wrong value for -%c.\n", c);
             
+            free(options.input);
+            free(options.output);
             return 1;
         }
     }
@@ -379,13 +388,18 @@ int main(int argc, char *argv[]) {
     /* ------------- */
     /* FUNCTIONALITY */
     /* ------------- */
+    
     if (options.mode){
         CifrarTexto(options);
     } else {
         DescifrarTexto(options);
     }
     
-    
+    free(options.ciphertext_size);
+    free(options.afin_mult);
+    free(options.afin_const);
+    free(options.input);
+    free(options.output);
 
     return 0;
 }
