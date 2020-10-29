@@ -112,10 +112,15 @@ long int kasiski(char *pT, int size, int n)
 int IC(char *pT, int size, int fLimit)
 {
     int result=0;
+
     int **frecuencias=0;
+
     char *auxS=NULL;
+
     float best=DBL_MAX, indice=0.0, aux=0.0;
+
     float *ic=NULL;
+
     long int den=0, num=0;
 
     int i, j, k; // ITERATORS
@@ -171,13 +176,18 @@ int IC(char *pT, int size, int fLimit)
 }
 
 int main (int argc, char **argv){
-
 	int long_index=0;
+
 	char opt;
-	char *text=NULL,*buff=NULL;
-	FILE  * fout =stdout, *fin=NULL;
-	int ngramas=0,size=0;
+
+	char *text=NULL, *buff=NULL;
+
+	FILE  *fout=stdout, *input=NULL;
+
+	int ngramas=0, size=0;
+
 	int fk = 0, end=0, ic=0;
+
 	static int fLimit=0;
 
 	static struct option options[] = {
@@ -195,57 +205,61 @@ int main (int argc, char **argv){
 				printf ("ngramas=  %s\n", optarg);
 				fk=1;
 				ngramas=atoi(optarg);
-			break;
+			    break;
+
 			case '6':
 				printf ("i\n");
-				fin=fopen (optarg, "r");
-				if(fin==NULL){
+				input=fopen (optarg, "r");
+				if(input==NULL){
 					printf("\nError: el archivo %s no existe\n", optarg);
 					return -1;
 				}
-			break;
+			    break;
+
 			case '7':
 				printf ("o\n");
 				fout=fopen (optarg, "w");
-				
+			    break;
 
-			break;
 			case'?':
-				printf("%s {-l} [-i file in ] [-o file out ] [-nl ]\n", argv[0]);
-			break;
-
+				printf("%s {-l Ngramas} [-i file in ] [-o file out ] [-nl ]\n", argv[0]);
+			    break;
 		}
 	}
+
 	if (fk==0){
-		printf("%s {-l} [-i file in ] [-o file out ] [-nl ]\n", argv[0] );
+		printf("%s {-l Ngramas} [-i file in ] [-o file out ] [-nl ]\n", argv[0] );
 		return 0;
 	}
-	if(fin==NULL)
-		fin=stdin;
+
+	if(input==NULL)
+		input=stdin;
+
 	text=(char*)malloc(512);
 	buff=(char*)malloc(512);
+
 	do{
-		if(fin ==stdin)
-			fscanf(fin, "%s", text);
+		if(input ==stdin)
+			fscanf(input, "%s", text);
 		else{
-			end=fread(buff,1,512, fin);
+			end=fread(buff, 1, 512, input);
 			size+=end;
 			buff = (char*) realloc(buff,end);
 			text = (char*) realloc(text,size);
 			strcat(text, buff);
 		}
-	}while(fin!=stdin&&end==512);
+	} while(input!=stdin && end==512);
+
 	text = (char*) realloc(text,size+1);
 	text[size]='\n';
-	//fwrite(text,1,size, fout);
-	printf("kasiski empiza, si se esta usando gcc.txt puede tardar\nvarios minutos dependiendo del ordenador\n");
+
+
+	printf("kasiski empiza, puede tardar\nvarios minutos dependiendo del ordenador\n");
 	printf("kasiski=%ld\n",kasiski(text,size > 0 ? size : strlen(text),ngramas));
-	printf("IC empieza\n");
 	ic=IC(text, size, fLimit);
 	printf("ic=%d\n",ic );
+
 	return 0;
-	//free(text);
-	//free(buff);
-	//printf("end=%d size =%d strlen=%d\n",size, end, strlen(text) );
+
 }
 
