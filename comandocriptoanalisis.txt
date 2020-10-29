@@ -1,1 +1,0 @@
-gcc criptanalisis.c euclid.c jwHash.c -o combined
