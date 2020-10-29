@@ -7,7 +7,7 @@
 
 
 #include "euclid.h"
-#include "jwHash/jwHash.h"
+#include "jwHash.h"
 
 #define REF 0.06653846153846153L
 

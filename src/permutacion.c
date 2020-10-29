@@ -10,7 +10,6 @@
 
 typedef enum { false, true } bool;
 
-
 typedef struct {
     char* text;
     int* key1;
@@ -20,7 +19,6 @@ typedef struct {
     int k2size;
 
 } parameters_perm;
-
 
 /* Function that stores all values of a key*/
 int* parse_key(char* key, int* keysize) {
@@ -128,7 +126,7 @@ int main (int argc, char **argv){
     parameters_perm params;    
 	int lg_idx=0;
 	char opt;
-	static int flagD=0,flagC=0;
+	static int flagDecrypt=0,flagCrypt=0;
 
     /* Cipher / Decipher variables */
 	char *plaintext=NULL;
@@ -147,8 +145,8 @@ int main (int argc, char **argv){
     bool key1_flag = false, key2_flag = false;
 	
 	static struct option options[] = {
-	    {"C",no_argument,&flagC,1},
-	    {"D",no_argument,&flagD, 1},
+	    {"C",no_argument,&flagCrypt,1},
+	    {"D",no_argument,&flagDecrypt, 1},
 	    {"k1",required_argument,0,'1'},
 	    {"k2",required_argument,0,'2'},
 	    {"i",required_argument, 0, '3'},
@@ -215,12 +213,12 @@ int main (int argc, char **argv){
 
 
     /* FUNCTIONALITY */
-	if(flagC) {
+	if(flagCrypt) {
 		output = permutation_cipher(plaintext, params);
         fprintf(fout, "%s", output);
 	}
 
-	else if(flagD){
+	else if(flagDecrypt){
 		output = permutation_decipher(plaintext, params);
         fprintf(fout, "%s", output);		
 	}
