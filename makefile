@@ -1,4 +1,4 @@
-all: afin afinmejorado vigenere criptanalisis flujo permutacion
+all: afin afinmejorado vigenere criptoanalisis flujo permutacion
 
 tests: testinput testafin testafinmejorado testvigenere testflujo testpermutacion
 
@@ -22,8 +22,8 @@ testafinmejorado:
 vigenere:
 	gcc -o vigenere src/vigenere.c
 
-criptanalisis:
-	gcc src/criptanalisis.c src/euclid.c src/jwHash.c -o criptanalisis
+criptoanalisis:
+	gcc src/criptoanalisis.c src/euclid.c src/jwHash.c -o criptoanalisis -g -include includes/jwHash.h -Llib -lhastable -Wall
 
 testvigenere:
 	./vigenere -C -k probando -i input -o output
@@ -44,4 +44,4 @@ testpermutacion:
 
 
 clean:
-	rm afin afinmejorado vigenere criptanalisis stream permutacion input output salida*
+	rm afin afinmejorado vigenere criptoanalisis stream permutacion input output salida*
