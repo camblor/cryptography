@@ -42,11 +42,11 @@ testdes: des
 	./desCBC -D -k 133457799BBCDFF1 -i cifrado -o exam2.pdf
 	echo "Ejecutado test DES"
 
-testtripledes: des
-	echo "Ejecutando test DES"
-	./TDES-CBC -C -k 133457799BBCDFF1123456789ABCFDE19876543210ABC583 -i doc/exam.pdf -o cifrado
-	./TDES-CBC -D -k 133457799BBCDFF1123456789ABCFDE19876543210ABC583 -i cifrado -o exam2.pdf
-	echo "Ejecutado test DES"
+testtripledes: tripledes
+	echo "Ejecutando test TripleDES"
+	./TDES-CBC -C -k 133457799BBCDFF1123456789ABCFDE19876543210ABC583 -i doc/enunciado.pdf -o cifrado
+	./TDES-CBC -D -k 133457799BBCDFF1123456789ABCFDE19876543210ABC583 -i cifrado -o enunciado.pdf
+	echo "Ejecutado test TripleDES"
 
 testnolinealidadDES: linedes
 	echo "Ejecutando test no linealidad DES"
@@ -58,13 +58,13 @@ testavalanchaDES: avades
 	./avalancha_des
 	echo "Ejecutado test efecto avalancha DES"
 
-testnolinealidadAES:
+testnolinealidadAES: nolineal_AES
 	echo "ejecutando test no linealidad AES"
-	./noLinealAES
+	./noLineal_AES
 
-testsboxAES:
+testsboxAES: sbox_AES
 	echo "ejecutando test S-BOX AES con salida en consola"
 	./sbox_AES -D
 
 clean:
-	rm -rf seg-perf des.o desCBC cifrado nolinealidad_DES avalancha_des exam2.pdf noLineal_AES sbox_AES
+	rm -rf seg-perf des.o desCBC cifrado nolinealidad_DES avalancha_des enunciado.pdf  TDES-CBC noLineal_AES sbox_AES
