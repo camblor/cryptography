@@ -7,7 +7,7 @@
 void initialize_aes_sbox(unsigned char sbox[256]) {
 	uint8_t p = 1, q = 1;
     int count=0;
-	
+
 	/* loop invariant: p * q == 1 in the Galois field */
 	do {
 		/* MULTIPLICAMOS P POR 3 */
@@ -27,20 +27,6 @@ void initialize_aes_sbox(unsigned char sbox[256]) {
 
 	/* ANIADIMOS EL VALOR 0x63 YA QUE EL 0 ES UN CASO ESPECIAL PUESTO QUE NO TIENE INVERSO */
 	sbox[0] = 0x63;
-
-    /*
-	for(int i=0 ; i<256 ; i++, count++)
-    {
-        if(count==16)
-        {
-            printf("\n");
-            count = 0;
-        }
-        printf("%x\t", sbox[i]);
-    }
-
-    printf("\n\n");
-	*/
 }
 
 void get_inv_sbox(uint8_t inv_sbox[256], uint8_t sbox[256])
@@ -51,7 +37,7 @@ void get_inv_sbox(uint8_t inv_sbox[256], uint8_t sbox[256])
 		for(j=0 ; j<256 ; j++)
 			if(i==sbox[j])
 				inv_sbox[i] = j;
-	
+
 }
 
 void print_sbox(FILE *output, uint8_t sbox[256])
@@ -65,7 +51,7 @@ void print_sbox(FILE *output, uint8_t sbox[256])
             fprintf(output, "\n");
             count = 0;
         }
-			fprintf(output, "0x%02x\t", sbox[i]);   
+			fprintf(output, "0x%02x\t", sbox[i]);
     }
     fprintf(output, "\n\n");
 }
@@ -87,11 +73,11 @@ int main(int argc, char* argv[])
 		case 'C':
 			flagC = 1;
 			break;
-		
+
 		case 'D':
 			flagD = 1;
 			break;
-		
+
 		case 'o':
 			output = fopen(optarg, "w");
 			if(!output)
@@ -100,7 +86,7 @@ int main(int argc, char* argv[])
 				return -1;
 			}
 			break;
-		
+
 		case '?':
 			fprintf(stderr, "Para ejecutar el programa: %s {-C | -D} [-o outpur file].\n", argv[0]);
 			return -1;
@@ -133,5 +119,5 @@ int main(int argc, char* argv[])
 
 	fclose(output);
 
-    return 0;
+	return 0;
 }
