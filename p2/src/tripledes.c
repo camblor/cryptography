@@ -11,6 +11,14 @@ int main (int argc, char **argv){
 	char* text=NULL,* buff=NULL;
 	FILE* fout =stdout,* fin=NULL;
 	int size=0;
+	char fullkey[48] = "0";
+	char key1[16+1];
+	char key2[16+1];
+	char key3[16+1];
+    uint64_t nkey1;
+    uint64_t nkey2;
+	uint64_t nkey3;
+	uint64_t destemp;
 	int fk = 0, end=0, ic=0, i=0,j=0;
 	static int flagC=0,flagD=0;
 	uint64_t k=0, k2=0, c, m=0;
@@ -27,18 +35,34 @@ int main (int argc, char **argv){
 	
 	while ((opt = getopt_long_only(argc, argv,"3:6:7:", options, &long_index )) != -1){
 		switch(opt){
-			case '3':
+			case '3':				
 				fk=1;
-				sscanf(optarg,"%08lX", (uint64_t*)&k);
-				k<<=32;
-				sscanf(optarg,"%016lX", (uint64_t*)&k2);
-				k|=k2;
-				sscanf(optarg,"%08lX", (uint64_t*)&k2);
+				sprintf(fullkey, "%s", optarg);
+				if (strlen(fullkey) != 48){
+					fprintf(stderr, "Bad key size.\n");
+					return -1;
+				}
+				for(i=0; i<16;i++){
+					key1[i] = fullkey[i];
+				}
+				key1[i] = 0;
+				for(i=0; i<16;i++){
+					key2[i] = fullkey[i+16];
+				}
+				key2[i] = 0;
+				for(i=0; i<16;i++){
+					key3[i] = fullkey[i+32];
+				}
+				key3[i] = 0;
+
+				nkey1 = strtoull(key1, NULL, 16);
+				nkey2 = strtoull(key2, NULL, 16);
+				nkey3 = strtoull(key3, NULL, 16);
 				break;
 			case '6':
 				fin=fopen (optarg, "rb");
 				if(fin==NULL){
-					printf("\nError: el archivo %s no existe\n", optarg);
+					printf("\nInput %s not exists\n", optarg);
 					return 0;
 				}
 				break;
@@ -46,7 +70,7 @@ int main (int argc, char **argv){
 				fout=fopen (optarg, "wb");
 				break;
 			case'?':
-				printf("%s {-C |-D -k} [-i file in ] [-o file out ] \n", argv[0]);
+				printf("%s {-C |-D -k} [-i file in ] [-o file out ]\n", argv[0]);
 				break;
 
 		}
@@ -55,12 +79,15 @@ int main (int argc, char **argv){
 		printf("%s {-C |-D -k} [-i file in ] [-o file out ]\n", argv[0] );
 		return 0;
 	}
+
+	/* Control for file input */
 	if(fin==NULL)
 		fin=stdin;
 
 	/* Llamada a DES*/
 	do{
 		if(fin ==stdin){
+			/* Input file reading */
 			fscanf(fin, "%s", text);
 			size=strlen(text);
 
@@ -76,8 +103,15 @@ int main (int argc, char **argv){
 			size+=end;
 
 			/* Obtención del ciphertext */
-			c=des(m,k,flagC);
-            
+			if(flagC){
+				c = des(m,nkey1,flagC);
+				destemp = des(c,nkey2,flagC);
+				c = des(destemp,nkey3,flagC);
+			} else{
+				c = des(m,nkey3,flagC);
+				destemp = des(c,nkey2,flagC);
+				c = des(destemp,nkey1,flagC);
+			}
 
 			/* Escritura del ciphertext */
 			fwrite(&c,sizeof(uint64_t),1, fout);

@@ -11,6 +11,10 @@ des: des.o include/des.h
 	gcc -o desCBC src/maindes.c des.o -include include/des.h
 	echo "Ejecutable desCBC generado correctamente."
 
+tripledes: des.o include/des.h
+	gcc -o TDES-CBC src/tripledes.c des.o -include include/des.h
+	echo "Ejecutable TDES-CBC generado correctamente."
+
 linedes: src/nolinealidad_DES.c des.o
 	gcc -o nolinealidad_DES src/nolinealidad_DES.c des.o
 	echo "nolinealidad_DES generado ejecutable"
@@ -29,6 +33,12 @@ testdes: des
 	echo "Ejecutando test DES"
 	./desCBC -C -k 133457799BBCDFF1 -i doc/exam.pdf -o cifrado
 	./desCBC -D -k 133457799BBCDFF1 -i cifrado -o exam2.pdf
+	echo "Ejecutado test DES"
+
+testtripledes: des
+	echo "Ejecutando test DES"
+	./TDES-CBC -C -k 133457799BBCDFF1123456789ABCFDE19876543210ABC583 -i doc/exam.pdf -o cifrado
+	./TDES-CBC -D -k 133457799BBCDFF1123456789ABCFDE19876543210ABC583 -i cifrado -o exam2.pdf
 	echo "Ejecutado test DES"
 
 testnolinealidadDES: linedes
