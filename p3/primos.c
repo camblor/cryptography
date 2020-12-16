@@ -211,7 +211,7 @@ static const int primos[NUM_PRIMOS] = {
 };
 
 /* Main output FILE pointer */
-FILE *fout;
+FILE *fout = stdout;
 
 /**
  * Performs Miller-Rabin test using implemented algorithm
@@ -235,21 +235,6 @@ unsigned long int power(unsigned long base,unsigned long int exponent) {
     return output;
 
 }
-/**
-*
-* 	1. Find integers k, q, with k > 0, q odd, so that n-1 = 2^kq
-*
-*	2. Select a random integer a, 1 < a < n - 1
-*
-*	3. if a^q mod n = 1 then return inconclusive
-*
-*	4. for j = 0 to k - 1 do
-*
-*	5. if a^((2^j) * q) mod n = n-q then return inconclusive
-*
-*	6. return composite
-*	
-**/
 
 /**
  * Performs Miller-Rabin test using implemented algorithm
@@ -271,7 +256,8 @@ int testMillerRabin(mpz_t eval_num, int reps, gmp_randstate_t state ){
     mpz_t prevNum;
 
     /* Integer variables */	
-	unsigned long int i, k2;
+	unsigned long int i;
+    unsigned long int int_k;
     
 
     /* Main variables initialization and setting */
@@ -283,35 +269,29 @@ int testMillerRabin(mpz_t eval_num, int reps, gmp_randstate_t state ){
 	mpz_init(exp);
 	mpz_init(prevNum);
 	
-    /* Special case: Even numbers are not prime */
+    /* Special case: Even numbers are not prime, 2 and 3 are. */
 	if(mpz_even_p(eval_num)){
+        fprintf(fout, "Not prime.\n");
 		return 1;
-	}
+	} else if ( mpz_get_ui(eval_num) == 2 || mpz_get_ui(eval_num) == 3){
+        fprintf(fout, "Definitely Prime.\n");
+        return 0;
+    }
 
-    /* 1. Find integers k, q, with k > 0, q odd, so that n-1 = 2^kq */
-    /* Obtain previous number to evaluated one */
+    /* Obtain n-1 */
 	mpz_sub_ui(prevNum, eval_num, 1);
-
     
     
     /* First step preparation */
-	mpz_set(q, eval_num);
-	mpz_sub_ui(q, q, 1);
+	mpz_set(q, prevNum);
 	mpz_set_ui(k, 0);
 
 
-    /* Main phase 1 loop */
+    /* Generate q odd and such k that n-1 = 2^kq */
 	while(mpz_even_p(q)){
 		mpz_cdiv_q_ui(q, q, 2);
 		mpz_add_ui(k,k, 1);
 	}
-
-	
-	/**
-	*	Paso 2
-	*	Selection of random integer 
-    *   a, 1 < a < n - 1
-	**/
 
     /* Random uniform number generator */
 	mpz_urandomm(a, state, eval_num);
@@ -320,70 +300,57 @@ int testMillerRabin(mpz_t eval_num, int reps, gmp_randstate_t state ){
 	if(mpz_cmp_ui(a, 0) == 0) {
 		mpz_add_ui(a, a, 1);
 	}
-	
-	/**
-	*	Paso 3
-	*	if a^q mod n = 1 then return inconclusive
-	**/
 
     /* First step 3 operation: Exponentiation with modulus */
 	mpz_powm(aux, a, q, eval_num);
 
-    /* Special case: Number is 1 */
+    /* Special case: Number is 1 -> Prime*/
 	if(mpz_cmp_ui(aux, 1) == 0){
+        fprintf(fout, "Probably Prime.\n");
 		return 0;
 	}
 
-    /* Special case: Number minus 1 */
+    /* Special case: Number minus 1 -> Prime */
 	if(mpz_cmp(aux, prevNum) == 0){
+        fprintf(fout, "Probably Prime.\n");
 		return 0;
 	}
-	
-
-	/**
-	*	Se itrea hasta k-1
-	*	paso 4
-	*	for j = 0 to k - 1 do
-	*	Paso 5
-	*	if a^((2^j) * q) mod n = n-q then return inconclusive
-	**/
 
     /* Step 4 preparation */
-	k2=mpz_get_ui(k);	
+	int_k=mpz_get_ui(k);	
 	mpz_sub(aux2, eval_num, q);
 
     /* Iteration until k-1 */
-	for (i=1; i<=k2-1; i++){
+	for (i=1; i<=int_k-1; i++){
 
         /* Setting and first product*/
 		mpz_set_ui(aux, power(2, i));
 		mpz_mul(aux, aux, q);
 
-        /* Exponentiation */
+        /* x = (x*x) % n */
 		mpz_powm(aux, a, aux, eval_num);
 
         /* Case equal */
 		if(mpz_cmp(aux, aux2)==0){
+            fprintf(fout, "Probably Prime.\n");
 			return 0;
 		}
 
-        /* Case minus1 Comparison */
+        /* Case aux is equal to n-1 */
 		if(mpz_cmp(aux, prevNum)==0){
+            fprintf(fout, "Probably Prime.\n");
 			return 0;
 		
 		}
 
-        /* Case comparison with 1 */
+        /* Case aux is equal to 1 */
 		if(mpz_cmp_ui(aux, 1)==0){
+            fprintf(fout, "Probably Not Prime.\n");
 			return 1;
-		
 		}
 	}
-	/**
-	*	paso 6
-	*
-	**/
-	
+
+	/* If nothing was detected, return 1*/
 	return 1;
 	
 }
@@ -406,37 +373,24 @@ int testMillerRabinGMP(mpz_t eval_num, int reps) {
     /* GMP Miller-Rabin result cases*/
     if(result == 0) {
         /* 0 means num is definitely not prime */
-		gmp_fprintf( fout, "GMP: %Zd es compuesto\n", eval_num);
+		gmp_fprintf( fout, "(GMP) NOT PRIME: %Zd Not Prime\n", eval_num);
 		return 1;
 	} else if(result == 1) {
         /* 1 means num is probably prime */
-		gmp_fprintf( fout, "GMP: %Zd es probablemente primo\n", eval_num);
+		gmp_fprintf( fout, "(GMP) PROBABLY PRIME: %Zd Probably Prime\n", eval_num);
 	} else if(result == 2) {
         /* 2 means num is definitely prime */
 		gmp_fprintf( fout, "(GMP) PRIME NUMBER: %Zd\n", eval_num);
 	}	
 	else {
         /* Some error has happened with GMP function */
-		fprintf( fout, "Algo raro ha pasado. ERROR en testMillerRabinGMP\n");
+		fprintf( fout, "(GMP) ERROR\n");
         return 1;
 	}
 
     /* Returnal of OK status*/
 	return 0;
 }
-
-/*
-Algoritmo:
-	1: Generar un N aleatorio 0-2^n-1 
-	2: Poner a 1 el bit mas significativo de n para asegurar que su tamano es de n bits
-	3: Poner a 1 el bit menos significativo para asegurar que es impar
-	4: dividir por la tabla de primos precalculados
-	5: test MR
-//*/
-
-/*
-	Funciones auxiliares para generar primos
-*/
 
 
 /**
@@ -479,15 +433,15 @@ int bitsPrepare(mpz_t result, int nbits) {
  * @param nbits Number of bits to generate (N).
  * @return State of operation.
  */
-int generadorPrimos(int nbits, int reps) {
+int primeGeneration(int nbits, int reps) {
 
     /* Iteration variables */
 	int i;
     int count = 0;
 
     /* Conditional variables */
-	int posiblePrimoEncontrado = 0;
-	int posiblePrimoEncontrado2 = 0;
+	int storedPrimality = 0;
+	int mainPrimality = 0;
 
     /* Prime number variable */
 	mpz_t randNumber;
@@ -497,18 +451,19 @@ int generadorPrimos(int nbits, int reps) {
 
     /* Number Variable Initialization*/
 	mpz_init(randNumber);
+    
 
     /* Random State Initialization and Seed setter. */
 	gmp_randinit_default(state);
 	gmp_randseed_ui(state, time(NULL));
 
-    /* Main loop */
-	while(!posiblePrimoEncontrado2) {
+    /* Primality Main loop */
+	while(!mainPrimality) {
         /* Prime number evaluation counter */
 		count++;
 
-        /* */
-		while(!posiblePrimoEncontrado) {
+        /* Generation and storage checker loop */
+		while(!storedPrimality) {
 
             /* Random N bits generation */
             mpz_urandomb(randNumber, state, nbits);
@@ -516,67 +471,78 @@ int generadorPrimos(int nbits, int reps) {
             /* Prepare generated bits to match generation */
 			bitsPrepare(randNumber, nbits);
 			
-			/*Dividir por todos los primeros 2000 primos*/
+			/* Storage checker loop */
 			for(i = 0; i < NUM_PRIMOS; i++) {
-                /* Updates condition */
-				posiblePrimoEncontrado = 1;
+
+                /* Enables primality condition */
+				storedPrimality = 1;
+
+                /* If divisible by any prime: composed */
 				if(mpz_divisible_ui_p(randNumber, primos[i])) {
-					/* If some pre-computed prime divides */
+
+					/* If its the own prime */
 					if(mpz_cmp_ui(randNumber, primos[i])) {
-						//Comprobar el caso en el que value == primos[i]
-						//gmp_fprintf( fout, "%Zd es divisible por %d\n", value, primos[i]);
-						posiblePrimoEncontrado = 0;
+
+						/* Restore Primality */
+						storedPrimality = 0;
 						break;
 					}
-					
 				}
-				//fprintf( fout, "%d\n", primos[i]);
 			}
 		}
 
-        /**/
-		posiblePrimoEncontrado = 0;
+        /* Primality restoring */
+		storedPrimality = 0;
 
         /* Miller Rabin test application */
 		for (i =0; i< reps; i++){
-			
-			posiblePrimoEncontrado2 = 1;
+            
+            /* Main Primality enabling */
+			mainPrimality = 1;
+
+            /* 1 means not prime */
 			if (testMillerRabin(randNumber,1, state)) {
-				
-				//gmp_fprintf( fout, "es compuesto %Zd\n", value);
-				posiblePrimoEncontrado2 = 0;
+				/* Restore primality condition*/
+				mainPrimality = 0;
 				break;
 			}
 			
 		}
 	}
-	gmp_fprintf( fout, "es posible primo:\n%Zd\n\n", randNumber);
+	gmp_fprintf( fout, "(OUR TEST) PRIME NUMBER: %Zd\n", randNumber);
 	testMillerRabinGMP(randNumber, reps);
-	fprintf( fout, "\nSe probaron %d numeros antes de que se pasase el test de miller rabin para %d bits y %d reps\n\n", count, nbits, reps);
+	fprintf( fout, "Tested numbers: %d\n", count);
+    fprintf( fout, "Bit number: %d \n", nbits);
+    fprintf( fout, "M-R Reps: %d \n", reps);
 	return 0;
 }
 
-/*Estimacion del error de MR para n bits, sec reps */
+
+/**
+ * Error estimation for Miller Rabin.
+ * 
+ * @param bits Bits operator to error measurement.
+ * @param reps Miller Rabin reps operator to error measurement.
+ * @return Numerical error estimation.
+ */
 double estMR(int bits, int reps){
-	int i;
-
-	return 1/
-		(1 + power(4, reps)/
-			( bits*log (2.0))
-			);
-
+	return 1/(1 + power(4, reps)/( bits*log (2.0)));
 }
 
 
-
-// primo -b _ -t sec [-o file]
 int main(int argc, char ** argv) {
 
-	int bits, reps;
+    /* Main M-R variables */
+	int n_bits;
+    int reps;
+
+    /* Main variables */
 	int long_index=0;
     char opt;
     int size=0;
     int fb = 0, ft = 0;
+
+    /* Parameter variables */
     static int flagC=0,flagD=0;
     static struct option options[] = {
         {"b",required_argument,0,'3'},
@@ -584,36 +550,42 @@ int main(int argc, char ** argv) {
         {"o",required_argument, 0, '7'},
         {0,0,0,0}
     };
- 
-    fout = stdout;
+    
+
+    /* Different cases*/
     while ((opt = getopt_long_only(argc, argv,"3:6:7:", options, &long_index )) != -1){
         switch(opt){
+
             case '3':
-            	bits = atoi(optarg);
+            	n_bits = atoi(optarg);
             	fb = 1;
- 
-            break;
+                break;
+
             case '6':
             	reps = atoi(optarg);
             	ft = 1;
-            break;
+                break;
+
             case '7':
                 fout=fopen (optarg, "wb");
-           
-            break;
+                break;
+            
             case'?':
                 printf("%s {-b bits } {-t sec} [-o file out ] \n", argv[0]);
-            break;
+                break;
  
         }
     }
+
+    /* Check if all neccesary arguments have been stored */
     if (fb == 0 || ft == 0){
         printf("%s {-b bits } {-t sec} [-o file out ]\n", argv[0] );
         return 0;
     }
+    /* Prime generation */
+	primeGeneration(n_bits, reps);
 
-    printf("Buscando numero primos de %d bits\n", bits);
-	generadorPrimos(bits, reps);
-    fprintf( fout, "Probabilidad de que el test MR haya fallado: %0.16f\n", estMR(bits, reps));
+    /* Miller Rabin error measurement */
+    fprintf( fout, "Miller Rabin error measurement: %0.16f\n", estMR(n_bits, reps));
     return 0;
 }
