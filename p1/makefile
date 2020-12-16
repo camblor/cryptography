@@ -23,7 +23,7 @@ vigenere:
 	gcc -o vigenere src/vigenere.c
 
 criptoanalisis:
-	gcc src/criptoanalisis.c src/euclid.c src/jwHash.c -o criptoanalisis -g -include includes/jwHash.h -Llib -lhastable -Wall
+	gcc src/criptoanalisis.c src/euclid.c src/jwHash.c -o criptoanalisis -g -include includes/jwHash.h -Llib -Wall
 
 testvigenere:
 	./vigenere -C -k probando -i input -o output
