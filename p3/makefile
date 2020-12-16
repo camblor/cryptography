@@ -1,8 +1,13 @@
-potencia:
-	gcc potencia potencia.c -lgmp -L.
+all: potencia primos lasvegas 
 
-primos:
-	gcc primos primos.c -lgmp -L.
+potencia: potencia.c
+	gcc -o potencia potencia.c -lgmp -L.
 
-lasvegas:
-	gcc lasvegas lasvegas.c -lgmp -L.
+primos: primos.c
+	gcc -o primos primos.c -lgmp -L.
+
+lasvegas: lasvegas.c
+	gcc -o lasvegas lasvegas.c -lgmp -L.
+
+clean:
+	rm potencia primos lasvegas
