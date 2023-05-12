@@ -1,7 +1,7 @@
 # cryptography
 Cryptography foundations - Universidad Autónoma de Madrid, 2020-2021
 
-##p1
+## p1
 In this part you can find Affine cipher, Euclid algorithm, Permutation cipher, Vigenere algorithm and RC4 encryption algorithm.
 
 Affine Cipher: This is a type of monoalphabetic substitution cipher, where each letter in an alphabet is mapped to its numeric equivalent, encrypted using a simple mathematical function, and converted back to a letter. The formula used in this encryption is (ax + b) mod m, where a and b are the keys, x is the numerical equivalent of a letter in the alphabet, and m is the size of the alphabet. The keys a and m must be coprime (i.e., their greatest common divisor must be 1) to ensure each letter maps to a unique other letter. The decryption function is the modular multiplicative inverse of the encryption function.
@@ -14,7 +14,7 @@ Vigenère Cipher: This is a method of encrypting alphabetic text by using a seri
 
 RC4 Encryption Algorithm: RC4 (Rivest Cipher 4) is a stream cipher, so it encrypts plaintext by mixing it with a series of random bytes, making it very difficult for anyone without the correct key to decode the original message. Despite its simplicity and speed in software, multiple vulnerabilities have been discovered in RC4, making it insecure for most uses. It is notably used in protocols such as Secure Socket Layer (SSL) and Wi-Fi Protected Access (WPA), although it has been deprecated in many of these applications due to security concerns.
 
-##p2
+## p2
 In this section you can find DES, AES and Triple DES.
 
 DES (Data Encryption Standard): DES is a symmetric-key algorithm for the encryption of digital data. It was developed in the early 1970s at IBM and adopted by the U.S. government as an official Federal Information Processing Standard in 1977 for encrypting non-classified information. DES is based on a block cipher that encrypts data in 64-bit blocks, using a 56-bit key. Despite being widely used for many years, DES is now considered insecure for many applications because its key size is too small by today's standards, which makes it vulnerable to brute-force attacks.
@@ -23,7 +23,7 @@ Triple DES (3DES): To increase the security of DES, the Triple DES algorithm was
 
 AES (Advanced Encryption Standard): AES is a symmetric encryption standard adopted by the U.S. government in 2001, replacing DES. It was the result of a worldwide call for submissions of encryption algorithms issued by the US National Institute of Standards and Technology (NIST) in 1997. The winning algorithm was Rijndael, developed by two Belgian cryptographers, Vincent Rijmen and Joan Daemen. Unlike DES, AES has a variable block size and key size – it can be chosen as 128, 192, or 256 bits. AES operates on a 4x4 array of bytes, known as a state, and has a series of rounds for which the number depends on the key size. AES is widely regarded as the most secure symmetric encryption standard and is used globally for protecting sensitive data.
 
-##p3
+## p3
 
 In this section you can find an implementation of a las vegas algorithm and some prime numbers. This is implemented using https://gmplib.org/
 
